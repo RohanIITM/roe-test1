@@ -1,0 +1,48 @@
+name: Matrix Build with Artifacts (475927a)
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    # 3+ variants -> runs in parallel
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # you can add more dimensions if you like, e.g. node: [18, 20]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Required identifier step
+      - name: matrix-475927a
+        run: echo "Running matrix variant on OS=${{ matrix.os }} (run id ${{ github.run_id }})"
+
+      - name: Generate build artifact content
+        shell: bash
+        run: |
+          mkdir -p dist
+          cat > dist/info.txt << 'EOF'
+          Matrix demo artifact
+          EOF
+          {
+            echo "repo: ${{ github.repository }}"
+            echo "run_id: ${{ github.run_id }}"
+            echo "job: ${{ github.job }}"
+            echo "os: ${{ matrix.os }}"
+            echo "timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          } >> dist/info.txt
+          # prove it's non-empty
+          test -s dist/info.txt && echo "Artifact content generated."
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # REQUIRED prefix
+          name: build-475927a-${{ matrix.os }}
+          path: dist/
+          if-no-files-found: error
